@@ -8,16 +8,6 @@ import math
 import numpy as np
 from scipy.spatial import KDTree
 
-'''
-This node will publish waypoints from the car's current position to some `x` distance ahead.
-As mentioned in the doc, you should ideally first implement a version which does not care
-about traffic lights or obstacles.
-Once you have created dbw_node, you will update this node to use the status of traffic lights too.
-Please note that our simulator also provides the exact location of traffic lights and their
-current status in `/vehicle/traffic_lights` message. You can use this message to build this node
-as well as to verify your TL classifier.
-'''
-
 LOOKAHEAD_WPS = 200 # Number of waypoints we will publish. You can change this number
 MAX_DECEL = .5 # calibration data
 
@@ -39,11 +29,11 @@ class WaypointUpdater(object):
        
         rospy.Subscriber('/current_pose', PoseStamped, self.pose_cb)
         rospy.Subscriber('/base_waypoints', Lane, self.waypoints_cb)
-    # this is a new subscriber , traffic info
+        # this is a new subscriber , traffic info
         rospy.Subscriber('/traffic_waypoint', Int32, self.traffic_cb)  
 
-    # publish the final waypoints , out put the generate lane       
-    self.final_waypoints_pub = rospy.Publisher('final_waypoints', Lane, queue_size=1)
+        # publish the final waypoints , out put the generate lane       
+        self.final_waypoints_pub = rospy.Publisher('final_waypoints', Lane, queue_size=1)
         # the interval time should at lease 200ms
         self.publisher_loop(50)
 
@@ -60,7 +50,7 @@ class WaypointUpdater(object):
 
         while not rospy.is_shutdown():
             if self.pose_msg and self.base_lane:
-        self.publish_waypoints()
+                self.publish_waypoints()
             rate.sleep()
 
     def pose_cb(self, msg):
@@ -142,13 +132,13 @@ class WaypointUpdater(object):
                 float64 z     
         
         """
-    # reserve the waypoint
+        # reserve the waypoint
         self.base_lane = waypoint_msg
         if not self.waypoints_2d:
-        # upload data
+            # upload data
             self.waypoints_2d = [[waypoint.pose.pose.position.x, waypoint.pose.pose.position.y] for waypoint in waypoint_msg.waypoints]
         
-        # prepare waypoint data for KDTree
+            # prepare waypoint data for KDTree
             self.waypoint_tree = KDTree(self.waypoints_2d)
 
     def publish_waypoints(self):
@@ -198,41 +188,41 @@ class WaypointUpdater(object):
                 float64 z
         
         """
-    # generate waypoints and update their velocity , based on how we want to car to behave
+        # generate waypoints and update their velocity , based on how we want to car to behave
         final_lane = self.generate_lane()
         self.final_waypoints_pub.publish(final_lane)
 
     def generate_lane(self):
-    # create lane object
+        # create lane object
         lane = Lane()
 
-    # get the closest index from our cars
+        # get the closest index from our cars
         closest_idx = self.get_nearest_waypoint_idx()
 
-    # get the farthest index which is the closest index plus the number of lookahead waypoints
+        # get the farthest index which is the closest index plus the number of lookahead waypoints
         farthest_idx = closest_idx + LOOKAHEAD_WPS
 
-    # keep the lane waypoints from our closest index to the farthest index
+        # keep the lane waypoints from our closest index to the farthest index
         base_waypoints = self.base_lane.waypoints[closest_idx:farthest_idx]
     
         # don't care about it, leave it alone
-    if self.stopline_wp_idx == -1 or (self.stopline_wp_idx >= farthest_idx):
-        lane.waypoints = base_waypoints
+        if self.stopline_wp_idx == -1 or (self.stopline_wp_idx >= farthest_idx):
+            lane.waypoints = base_waypoints
         # brake action
         else:
-        lane.waypoints = self.decelerate_waypoints(base_waypoints, closest_idx)
+            lane.waypoints = self.decelerate_waypoints(base_waypoints, closest_idx)
 
-    return lane
+        return lane
    
     def decelerate_waypoints(self, waypoints, closest_idx):
         # don't modify base waypoint directly, so use temp[]
         temp = []
 
-    # enumerate over the sliced list of waypoints
+        # enumerate over the sliced list of waypoints
         for i, wp in enumerate(waypoints):
         
-        # create new Waypoint object
-        p = Waypoint()
+            # create new Waypoint object
+            p = Waypoint()
 
             # set the pose to the base waypoint pose
             p.pose = wp.pose
@@ -246,14 +236,14 @@ class WaypointUpdater(object):
             # velocity falling down profile when brake, the larger distance the smaller brake
             vel = math.sqrt(2 * MAX_DECEL * dist)
 
-        # too slow speed , just stop the car
+            # too slow speed , just stop the car
             if vel <1.:
                 vel = 0.
         
-        # the square root can become very large as the distance is large, we don't want to set a really velocity if we're long way away from the stop waypoint, just keep the velocity that was given
+            # the square root can become very large as the distance is large, we don't want to set a really velocity if we're long way away from the stop waypoint, just keep the velocity that was given
             p.twist.twist.linear.x = min(vel, wp.twist.twist.linear.x)
-        temp.append(p)
-    return temp
+            temp.append(p)
+        return temp
 
     # below is the same as before, not chage.
     def get_nearest_waypoint_idx(self):
@@ -288,7 +278,7 @@ class WaypointUpdater(object):
 
 
     def traffic_cb(self, msg):
-    # get the stop line waypoint index
+        # get the stop line waypoint index
         self.stopline_wp_idx = msg.data
 
     def obstacle_cb(self, msg):
@@ -296,11 +286,11 @@ class WaypointUpdater(object):
         pass
 
     def get_waypoint_velocity(self, waypoint):
-    # get speed information 
+        # get speed information 
         return waypoint.twist.twist.linear.x
 
     def set_waypoint_velocity(self, waypoints, waypoint, velocity):
-    # set speed
+        # set speed
         waypoints[waypoint].twist.twist.linear.x = velocity
 
     def distance(self, waypoints, wp1, wp2):
